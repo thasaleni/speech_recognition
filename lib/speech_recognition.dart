@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 typedef void AvailabilityHandler(bool result);
 typedef void StringResultHandler(String text);
+typedef void ErrorHandler(int result);
 
 /// the channel to control the speech recognition
 class SpeechRecognition {
@@ -26,9 +27,10 @@ class SpeechRecognition {
 
   VoidCallback recognitionStartedHandler;
 
-  StringResultHandler recognitionCompleteHandler;
-  
-  VoidCallback errorHandler;
+  VoidCallback recognitionCompleteHandler;
+   
+  ErrorHandler onErrorHandler;
+
 
   /// ask for speech  recognizer permission
   Future activate() => _channel.invokeMethod("speech.activate");
@@ -37,10 +39,8 @@ class SpeechRecognition {
   Future listen({String locale}) =>
       _channel.invokeMethod("speech.listen", locale);
 
-  /// cancel speech
   Future cancel() => _channel.invokeMethod("speech.cancel");
-  
-  /// stop listening
+
   Future stop() => _channel.invokeMethod("speech.stop");
 
   Future _platformCallHandler(MethodCall call) async {
@@ -59,10 +59,10 @@ class SpeechRecognition {
         recognitionStartedHandler();
         break;
       case "speech.onRecognitionComplete":
-        recognitionCompleteHandler(call.arguments);
+        recognitionCompleteHandler();
         break;
       case "speech.onError":
-        errorHandler();
+        onErrorHandler(call.arguments);
         break;
       default:
         print('Unknowm method ${call.method} ');
@@ -82,11 +82,12 @@ class SpeechRecognition {
       recognitionStartedHandler = handler;
 
   // define a method to handle native call
-  void setRecognitionCompleteHandler(StringResultHandler handler) =>
+  void setRecognitionCompleteHandler(VoidCallback handler) =>
       recognitionCompleteHandler = handler;
 
   void setCurrentLocaleHandler(StringResultHandler handler) =>
       currentLocaleHandler = handler;
-  
-  void setErrorHandler(VoidCallback handler) => errorHandler = handler;
+
+  void setOnErrorHandler(ErrorHandler handler) =>
+      onErrorHandler = handler;
 }
